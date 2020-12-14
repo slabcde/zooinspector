@@ -20,11 +20,13 @@ package org.apache.zookeeper.retry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.inspector.logger.LoggerFactory;
@@ -47,7 +49,7 @@ public class ZooKeeperRetry extends ZooKeeper {
      */
     public ZooKeeperRetry(String connectString, int sessionTimeout,
             Watcher watcher) throws IOException {
-        super(connectString, sessionTimeout, watcher);
+        super(connectString, sessionTimeout, watcher, getConfig());
         this.watcher = watcher;
     }
 
@@ -63,6 +65,18 @@ public class ZooKeeperRetry extends ZooKeeper {
             Watcher watcher, long sessionId, byte[] sessionPasswd)
             throws IOException {
         super(connectString, sessionTimeout, watcher, sessionId, sessionPasswd);
+        this.watcher = watcher;
+    }
+
+    /**
+     * @param connectString
+     * @param sessionTimeout
+     * @param watcher
+     * @throws IOException
+     */
+    public ZooKeeperRetry(String connectString, int sessionTimeout,
+                          Watcher watcher, ZKClientConfig conf) throws IOException {
+        super(connectString, sessionTimeout, watcher, conf);
         this.watcher = watcher;
     }
 
@@ -285,4 +299,15 @@ public class ZooKeeperRetry extends ZooKeeper {
         return false;
     }
 
+    public static ZKClientConfig getConfig() {
+        try {
+            final ZKClientConfig zkClientConfig = new ZKClientConfig();
+            Properties properties = new Properties();
+            properties.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("zkclientconfig.properties"));
+            properties.entrySet().stream().forEach(entry -> zkClientConfig.setProperty(entry.getKey().toString(), entry.getValue().toString()));
+            return zkClientConfig;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
